@@ -1,7 +1,7 @@
 --[[
 
 	NovaUI Interface Suite
-	by MateoScripts
+	by M4teo
 
 	shlex  | Designing + Programming
 	iRay   | Programming
@@ -26,6 +26,7 @@ local UserInputService = getService("UserInputService")
 local TweenService = getService("TweenService")
 local Players = getService("Players")
 local CoreGui = getService("CoreGui")
+local RunService = getService("RunService")
 
 -- Loads and executes a function hosted on a remote URL. Cancels the request if the requested URL takes too long to respond.
 -- Errors with the function are caught and logged to the output
@@ -81,11 +82,11 @@ local requestsDisabled = false
 local customAssetId = nil
 local secureMode = false
 if getgenv then
-	local ok, result = pcall(function() return getgenv().DISABLE_NOVAUI_REQUESTS end)
+	local ok, result = pcall(function() return getgenv().DISABLE_RAYFIELD_REQUESTS end)
 	if ok and result then requestsDisabled = true end
-	local ok2, result2 = pcall(function() return getgenv().NOVAUI_ASSET_ID end)
+	local ok2, result2 = pcall(function() return getgenv().RAYFIELD_ASSET_ID end)
 	if ok2 and type(result2) == "number" then customAssetId = result2 end
-	local ok3, result3 = pcall(function() return getgenv().NOVAUI_SECURE end)
+	local ok3, result3 = pcall(function() return getgenv().RAYFIELD_SECURE end)
 	if ok3 and result3 then secureMode = true end
 end
 
@@ -105,8 +106,8 @@ local function secureNotify(wType, title, content)
 	if secureWarnings[wType] then return end
 	secureWarnings[wType] = true
 	task.spawn(function()
-		while not NovaUILibrary or not NovaUILibrary.Notify do task.wait(0.5) end
-		NovaUILibrary:Notify({
+		while not RayfieldLibrary or not RayfieldLibrary.Notify do task.wait(0.5) end
+		RayfieldLibrary:Notify({
 			Title = title,
 			Content = content,
 			Duration = 8,
@@ -115,15 +116,15 @@ local function secureNotify(wType, title, content)
 end
 local InterfaceBuild = 'UU2NX'
 local Release = "Build 1.749"
-local NovaUIFolder = "NovaUI"
-local ConfigurationFolder = NovaUIFolder.."/Configurations"
+local RayfieldFolder = "Rayfield"
+local ConfigurationFolder = RayfieldFolder.."/Configurations"
 local ConfigurationExtension = ".rfld"
 local settingsTable = {
 	General = {
 		-- if needs be in order just make getSetting(name)
-		novaUIOpen = {Type = 'bind', Value = 'K', Name = 'NovaUI Keybind'},
+		rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'NovaUI Keybind'},
 		-- buildwarnings
-		-- novaUIprompts
+		-- rayfieldprompts
 
 	},
 	System = {
@@ -133,7 +134,7 @@ local settingsTable = {
 
 -- Settings that have been overridden by the developer. These will not be saved to the user's configuration file
 -- Overridden settings always take precedence over settings in the configuration file, and are cleared if the user changes the setting in the UI
-local overriddenSettings: { [string]: any } = {} -- For example, overriddenSettings["System.novaUIOpen"] = "J"
+local overriddenSettings: { [string]: any } = {} -- For example, overriddenSettings["System.rayfieldOpen"] = "J"
 local function overrideSetting(category: string, name: string, value: any)
 	overriddenSettings[category .. "." .. name] = value
 end
@@ -196,16 +197,16 @@ local function loadSettings()
 	local file = nil
 
 	local success, result =	pcall(function()
-		if callSafely(isfolder, NovaUIFolder) then
-			if callSafely(isfile, NovaUIFolder..'/settings'..ConfigurationExtension) then
-				file = callSafely(readfile, NovaUIFolder..'/settings'..ConfigurationExtension)
+		if callSafely(isfolder, RayfieldFolder) then
+			if callSafely(isfile, RayfieldFolder..'/settings'..ConfigurationExtension) then
+				file = callSafely(readfile, RayfieldFolder..'/settings'..ConfigurationExtension)
 			end
 		end
 
 		-- for debug in studio
 		if useStudio then
 			file = [[
-	{"General":{"novaUIOpen":{"Value":"K","Type":"bind","Name":"NovaUI Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"NovaUI Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}},"System":{"usageAnalytics":{"Value":false,"Type":"toggle","Name":"Anonymised Analytics","Element":{"Ext":true,"Name":"Anonymised Analytics","Set":null,"CurrentValue":false,"Callback":null}}}}
+	{"General":{"rayfieldOpen":{"Value":"K","Type":"bind","Name":"NovaUI Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"NovaUI Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}},"System":{"usageAnalytics":{"Value":false,"Type":"toggle","Name":"Anonymised Analytics","Element":{"Ext":true,"Name":"Anonymised Analytics","Set":null,"CurrentValue":false,"Callback":null}}}}
 ]]
 		end
 
@@ -274,7 +275,7 @@ local ANALYTICS_TOKEN = "05de7f9fd320d3b8428cd1c77014a337b85b6c8efee2c5914f5ab57
 
 local reporter = nil
 if not requestsDisabled and not useStudio then
-	local fetchSuccess, fetchResult = pcall((game :: any).HttpGet, game, "https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/refs/heads/main/reporter.lua")
+	local fetchSuccess, fetchResult = pcall((game :: any).HttpGet, game, "https://raw.githubusercontent.com/SiriusSoftwareLtd/NovaUI/refs/heads/main/reporter.lua")
 	if fetchSuccess and #fetchResult > 0 then
 		local execSuccess, Analytics = pcall(function()
 			return (loadstring(fetchResult) :: any)()
@@ -284,7 +285,7 @@ if not requestsDisabled and not useStudio then
 				reporter = Analytics.new({
 					url          = "https://rayfield-collect.sirius-software-ltd.workers.dev",
 					token        = ANALYTICS_TOKEN,
-					product_name = "NovaUI",
+					product_name = "Rayfield",
 					category     = "UILibrary",
 				})
 			end)
@@ -319,7 +320,7 @@ if debugX then
 	warn('Moving on to continue initialisation')
 end
 
-local NovaUILibrary = {
+local RayfieldLibrary = {
 	Flags = {},
 	Theme = {
 		Default = {
@@ -706,13 +707,13 @@ local NovaUILibrary = {
 
 -- Interface Management
 
-local NovaUIAssetId = customAssetId or 10804731440
-local NovaUI = useStudio and script.Parent:FindFirstChild('NovaUI') or game:GetObjects("rbxassetid://"..NovaUIAssetId)[1]
+local RayfieldAssetId = customAssetId or 10804731440
+local NovaUI = useStudio and script.Parent:FindFirstChild('Rayfield') or game:GetObjects("rbxassetid://"..RayfieldAssetId)[1]
 local buildAttempts = 0
 local correctBuild = false
 local warned
 local globalLoaded
-local novaUIDestroyed = false -- True when NovaUILibrary:Destroy() is called
+local rayfieldDestroyed = false -- True when RayfieldLibrary:Destroy() is called
 
 repeat
 	if NovaUI:FindFirstChild('Build') and NovaUI.Build.Value == InterfaceBuild then
@@ -729,7 +730,7 @@ repeat
 	end
 
 	local toDestroy
-	toDestroy, NovaUI = NovaUI, useStudio and script.Parent:FindFirstChild('NovaUI') or game:GetObjects("rbxassetid://"..NovaUIAssetId)[1]
+	toDestroy, NovaUI = NovaUI, useStudio and script.Parent:FindFirstChild('Rayfield') or game:GetObjects("rbxassetid://"..RayfieldAssetId)[1]
 	if toDestroy and not useStudio then toDestroy:Destroy() end
 
 	buildAttempts = buildAttempts + 1
@@ -765,27 +766,12 @@ elseif not useStudio then
 end
 
 if secureMode and not customAssetId then
-	secureNotify("default_asset", "Secure Mode", "You are using the default NovaUI asset ID. Set NOVAUI_ASSET_ID to a custom upload to avoid detection.")
+	secureNotify("default_asset", "Secure Mode", "You are using the default NovaUI asset ID. Set RAYFIELD_ASSET_ID to a custom upload to avoid detection.")
 end
 
--- === EFECTO RGB ANIMADO PARA BORDES (UIStroke) ===
-local RGBHue = 0
-RunService.RenderStepped:Connect(function(deltaTime)
-	RGBHue = (RGBHue + deltaTime * 0.1) % 1
-	local rainbowColor = Color3.fromHSV(RGBHue, 1, 1)
-
-	if NovaUI and NovaUI.Parent then
-		for _, v in ipairs(NovaUI:GetDescendants()) do
-			if v:IsA("UIStroke") then
-				v.Color = rainbowColor
-			end
-		end
-	end
-end)
-
 do
-	local AssetPath = NovaUIFolder.."/Assets"
-	local AssetBaseURL = "https://github.com/SiriusSoftwareLtd/Rayfield/blob/main/assets/"
+	local AssetPath = RayfieldFolder.."/Assets"
+	local AssetBaseURL = "https://github.com/SiriusSoftwareLtd/NovaUI/blob/main/assets/"
 
 	local assetFiles = {
 		["111263549366178"] = AssetBaseURL.."111263549366178.png?raw=true",
@@ -817,7 +803,7 @@ do
 
 	if hasCustomAsset and hasFilesystem then
 		local ok, err = pcall(function()
-			ensureFolder(NovaUIFolder)
+			ensureFolder(RayfieldFolder)
 			ensureFolder(AssetPath)
 
 			-- skip ids we've already tried so a dead asset can't loop the loader forever
@@ -864,10 +850,10 @@ do
 
 		if not ok then
 			warn("NovaUI | Failed to load custom assets: "..tostring(err))
-			secureNotify("asset_load_fail", "NovaUI", "Failed to load custom assets. UI images may not display correctly.")
+			secureNotify("asset_load_fail", "Rayfield", "Failed to load custom assets. UI images may not display correctly.")
 		end
 	else
-		secureNotify("no_getcustomasset", "NovaUI", "Your executor does not support getcustomasset. Some UI images may not render correctly.")
+		secureNotify("no_getcustomasset", "Rayfield", "Your executor does not support getcustomasset. Some UI images may not render correctly.")
 	end
 
 
@@ -918,6 +904,33 @@ local Topbar = Main.Topbar
 local Elements = Main.Elements
 local LoadingFrame = Main.LoadingFrame
 local TabList = Main.TabList
+
+-- NovaUI RGB Borders
+-- Continuously cycles every UIStroke in the NovaUI interface through the RGB spectrum.
+local RGBBordersEnabled = true
+local RGBSpeed = 0.18
+
+local function updateRGBBorders(hue)
+	if not RGBBordersEnabled or not NovaUI or not NovaUI.Parent then
+		return
+	end
+
+	local rgbColor = Color3.fromHSV(hue % 1, 1, 1)
+	for _, object in ipairs(NovaUI:GetDescendants()) do
+		if object:IsA("UIStroke") then
+			object.Color = rgbColor
+		end
+	end
+end
+
+task.spawn(function()
+	local hue = 0
+	while RGBBordersEnabled and NovaUI and NovaUI.Parent do
+		hue = (hue + RGBSpeed * task.wait()) % 1
+		updateRGBBorders(hue)
+	end
+end)
+
 local dragBar = NovaUI:FindFirstChild('Drag')
 local dragInteract = dragBar and dragBar.Interact or nil
 local dragBarCosmetic = dragBar and dragBar.Drag or nil
@@ -929,7 +942,7 @@ NovaUI.DisplayOrder = 100
 LoadingFrame.Version.Text = Release
 
 -- Thanks to Latte Softworks for the Lucide integration for Roblox
-local Icons = useStudio and require(script.Parent.icons) or loadWithTimeout('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/refs/heads/main/icons.lua')
+local Icons = useStudio and require(script.Parent.icons) or loadWithTimeout('https://raw.githubusercontent.com/SiriusSoftwareLtd/NovaUI/refs/heads/main/icons.lua')
 -- Variables
 
 local CFileName = nil
@@ -941,11 +954,11 @@ local searchOpen = false
 local Notifications = NovaUI.Notifications
 local keybindConnections = {} -- For storing keybind connections to disconnect when NovaUI is destroyed
 
-local SelectedTheme = NovaUILibrary.Theme.Default
+local SelectedTheme = RayfieldLibrary.Theme.Default
 
 local function ChangeTheme(Theme)
 	if typeof(Theme) == 'string' then
-		SelectedTheme = NovaUILibrary.Theme[Theme]
+		SelectedTheme = RayfieldLibrary.Theme[Theme]
 	elseif typeof(Theme) == 'table' then
 		SelectedTheme = Theme
 	end
@@ -1149,7 +1162,7 @@ local function LoadConfiguration(Configuration)
 	if not success then warn('NovaUI had an issue decoding the configuration file, please try delete the file and reopen NovaUI.') return end
 
 	-- Iterate through current UI elements' flags
-	for FlagName, Flag in pairs(NovaUILibrary.Flags) do
+	for FlagName, Flag in pairs(RayfieldLibrary.Flags) do
 		local FlagValue = Data[FlagName]
 
 		if (typeof(FlagValue) == 'boolean' and FlagValue == false) or FlagValue then
@@ -1167,7 +1180,7 @@ local function LoadConfiguration(Configuration)
 		else
 			warn("NovaUI | Unable to find '"..FlagName.. "' in the save file.")
 			print("The error above may not be an issue if new elements have been added or not been set values.")
-			--NovaUILibrary:Notify({Title = "NovaUI Flags", Content = "NovaUI was unable to find '"..FlagName.. "' in the save file. Check sirius.menu/discord for help.", Image = 3944688398})
+			--RayfieldLibrary:Notify({Title = "NovaUI Flags", Content = "NovaUI was unable to find '"..FlagName.. "' in the save file. Check sirius.menu/discord for help.", Image = 3944688398})
 		end
 	end
 
@@ -1182,7 +1195,7 @@ local function SaveConfiguration()
 	end
 
 	local Data = {}
-	for i, v in pairs(NovaUILibrary.Flags) do
+	for i, v in pairs(RayfieldLibrary.Flags) do
 		if v.Type == "ColorPicker" then
 			Data[i] = PackColor(v.Color)
 		else
@@ -1222,7 +1235,7 @@ local function SaveConfiguration()
 	callSafely(writefile, ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension, tostring(HttpService:JSONEncode(Data)))
 end
 
-function NovaUILibrary:Notify(data) -- action e.g open messages
+function RayfieldLibrary:Notify(data) -- action e.g open messages
 	task.spawn(function()
 
 		-- Notification Object Creation
@@ -1450,9 +1463,9 @@ local function Hide(notify: boolean?)
 	Debounce = true
 	if notify then
 		if useMobilePrompt then 
-			NovaUILibrary:Notify({Title = "Interface Hidden", Content = "The interface has been hidden, you can unhide the interface by tapping 'Show'.", Duration = 7, Image = 4400697855})
+			RayfieldLibrary:Notify({Title = "Interface Hidden", Content = "The interface has been hidden, you can unhide the interface by tapping 'Show'.", Duration = 7, Image = 4400697855})
 		else
-			NovaUILibrary:Notify({Title = "Interface Hidden", Content = "The interface has been hidden, you can unhide the interface by tapping " .. tostring(getSetting("General", "novaUIOpen")) .. ".", Duration = 7, Image = 4400697855})
+			RayfieldLibrary:Notify({Title = "Interface Hidden", Content = "The interface has been hidden, you can unhide the interface by tapping " .. tostring(getSetting("General", "rayfieldOpen")) .. ".", Duration = 7, Image = 4400697855})
 		end
 	end
 
@@ -1612,7 +1625,7 @@ local function saveSettings() -- Save settings to config file
 				script.Parent['get.val'].Value = encoded
 			end
 		end
-		callSafely(writefile, NovaUIFolder..'/settings'..ConfigurationExtension, encoded)
+		callSafely(writefile, RayfieldFolder..'/settings'..ConfigurationExtension, encoded)
 	end
 end
 
@@ -1703,9 +1716,9 @@ local function fadeOutKeyUI(KeyMain)
 	TweenService:Create(KeyMain.Hide, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
 end
 
-function NovaUILibrary:CreateWindow(Settings)
+function RayfieldLibrary:CreateWindow(Settings)
 	if NovaUI:FindFirstChild('Loading') then
-		if getgenv and not getgenv().novaUICached then
+		if getgenv and not getgenv().rayfieldCached then
 			NovaUI.Enabled = true
 			NovaUI.Loading.Visible = true
 
@@ -1714,12 +1727,12 @@ function NovaUILibrary:CreateWindow(Settings)
 		end
 	end
 
-	if getgenv then getgenv().novaUICached = true end
+	if getgenv then getgenv().rayfieldCached = true end
 
 	if not correctBuild and not Settings.DisableBuildWarnings then
 		task.delay(3, 
 			function() 
-				NovaUILibrary:Notify({Title = 'Build Mismatch', Content = 'NovaUI may encounter issues as you are running an incompatible interface version ('.. ((NovaUI:FindFirstChild('Build') and NovaUI.Build.Value) or 'No Build') ..').\n\nThis version of NovaUI is intended for interface build '..InterfaceBuild..'.\n\nTry rejoining and then run the script twice.', Image = 4335487866, Duration = 15})		
+				RayfieldLibrary:Notify({Title = 'Build Mismatch', Content = 'NovaUI may encounter issues as you are running an incompatible interface version ('.. ((NovaUI:FindFirstChild('Build') and NovaUI.Build.Value) or 'No Build') ..').\n\nThis version of NovaUI is intended for interface build '..InterfaceBuild..'.\n\nTry rejoining and then run the script twice.', Image = 4335487866, Duration = 15})		
 			end)
 	end
 
@@ -1730,16 +1743,16 @@ function NovaUILibrary:CreateWindow(Settings)
 			assert(pcall(function()
 				return Enum.KeyCode[keybind]
 			end), "ToggleUIKeybind must be a valid KeyCode")
-			overrideSetting("General", "novaUIOpen", keybind)
+			overrideSetting("General", "rayfieldOpen", keybind)
 		elseif typeof(keybind) == "EnumItem" then
 			assert(keybind.EnumType == Enum.KeyCode, "ToggleUIKeybind must be a KeyCode enum")
-			overrideSetting("General", "novaUIOpen", keybind.Name)
+			overrideSetting("General", "rayfieldOpen", keybind.Name)
 		else
 			error("ToggleUIKeybind must be a string or KeyCode enum")
 		end
 	end
 
-	ensureFolder(NovaUIFolder)
+	ensureFolder(RayfieldFolder)
 
 	local Passthrough = false
 	Topbar.Title.Text = Settings.Name
@@ -1758,7 +1771,7 @@ function NovaUILibrary:CreateWindow(Settings)
 	end
 
 	LoadingFrame.Version.TextTransparency = 1
-	LoadingFrame.Title.Text = Settings.LoadingTitle or "NovaUI"
+	LoadingFrame.Title.Text = Settings.LoadingTitle or "Rayfield"
 	LoadingFrame.Subtitle.Text = Settings.LoadingSubtitle or "Interface Suite"
 
 	if Settings.LoadingTitle ~= "NovaUI Interface Suite" then
@@ -1802,12 +1815,12 @@ function NovaUILibrary:CreateWindow(Settings)
 	Elements.Visible = false
 	LoadingFrame.Visible = true
 
-	if not Settings.DisableNovaUIPrompts then
+	if not Settings.DisableRayfieldPrompts then
 		task.spawn(function()
-			while not novaUIDestroyed do
+			while not rayfieldDestroyed do
 				task.wait(math.random(180, 600))
-				if novaUIDestroyed then break end
-				NovaUILibrary:Notify({
+				if rayfieldDestroyed then break end
+				RayfieldLibrary:Notify({
 					Title = "NovaUI Interface",
 					Content = "Enjoying this UI library? Find it at sirius.menu/discord",
 					Duration = 7,
@@ -1849,9 +1862,9 @@ function NovaUILibrary:CreateWindow(Settings)
 	end
 
 	if Settings.Discord and Settings.Discord.Enabled and not useStudio and not secureMode then
-		ensureFolder(NovaUIFolder.."/Discord Invites")
+		ensureFolder(RayfieldFolder.."/Discord Invites")
 
-		if not callSafely(isfile, NovaUIFolder.."/Discord Invites".."/"..Settings.Discord.Invite..ConfigurationExtension) then
+		if not callSafely(isfile, RayfieldFolder.."/Discord Invites".."/"..Settings.Discord.Invite..ConfigurationExtension) then
 			if requestFunc then
 				pcall(function()
 					requestFunc({
@@ -1871,7 +1884,7 @@ function NovaUILibrary:CreateWindow(Settings)
 			end
 
 			if Settings.Discord.RememberJoins then -- We do logic this way so if the developer changes this setting, the user still won't be prompted, only new users
-				callSafely(writefile, NovaUIFolder.."/Discord Invites".."/"..Settings.Discord.Invite..ConfigurationExtension,"NovaUI RememberJoins is true for this invite, this invite will not ask you to join again")
+				callSafely(writefile, RayfieldFolder.."/Discord Invites".."/"..Settings.Discord.Invite..ConfigurationExtension,"NovaUI RememberJoins is true for this invite, this invite will not ask you to join again")
 			end
 		end
 	end
@@ -1882,7 +1895,7 @@ function NovaUILibrary:CreateWindow(Settings)
 			return
 		end
 
-		ensureFolder(NovaUIFolder.."/Key System")
+		ensureFolder(RayfieldFolder.."/Key System")
 
 		if typeof(Settings.KeySettings.Key) == "string" then Settings.KeySettings.Key = {Settings.KeySettings.Key} end
 
@@ -1903,9 +1916,9 @@ function NovaUILibrary:CreateWindow(Settings)
 			Settings.KeySettings.FileName = "No file name specified"
 		end
 
-		if callSafely(isfile, NovaUIFolder.."/Key System".."/"..Settings.KeySettings.FileName..ConfigurationExtension) then
+		if callSafely(isfile, RayfieldFolder.."/Key System".."/"..Settings.KeySettings.FileName..ConfigurationExtension) then
 			for _, MKey in ipairs(Settings.KeySettings.Key) do
-				local savedKeys = callSafely(readfile, NovaUIFolder.."/Key System".."/"..Settings.KeySettings.FileName..ConfigurationExtension)
+				local savedKeys = callSafely(readfile, RayfieldFolder.."/Key System".."/"..Settings.KeySettings.FileName..ConfigurationExtension)
 				if savedKeys and string.find(savedKeys, MKey) then
 					Passthrough = true
 				end
@@ -1915,7 +1928,7 @@ function NovaUILibrary:CreateWindow(Settings)
 		if not Passthrough and secureMode then
 			warn("NovaUI | Secure Mode: Key system requires a valid saved key. The key UI cannot be shown as it requires loading detectable assets.")
 			NovaUI.Enabled = false
-			return NovaUILibrary
+			return RayfieldLibrary
 		end
 
 		if not Passthrough then
@@ -2011,8 +2024,8 @@ function NovaUILibrary:CreateWindow(Settings)
 					Passthrough = true
 					KeyMain.Visible = false
 					if Settings.KeySettings.SaveKey then
-						callSafely(writefile, NovaUIFolder.."/Key System".."/"..Settings.KeySettings.FileName..ConfigurationExtension, FoundKey)
-						NovaUILibrary:Notify({Title = "Key System", Content = "The key for this script has been saved successfully.", Image = 3605522284})
+						callSafely(writefile, RayfieldFolder.."/Key System".."/"..Settings.KeySettings.FileName..ConfigurationExtension, FoundKey)
+						RayfieldLibrary:Notify({Title = "Key System", Content = "The key for this script has been saved successfully.", Image = 3605522284})
 					end
 				else
 					if AttemptsRemaining == 0 then
@@ -2037,7 +2050,7 @@ function NovaUILibrary:CreateWindow(Settings)
 				fadeOutKeyUI(KeyMain)
 				task.wait(0.51)
 				Passthrough = true
-				NovaUILibrary:Destroy()
+				RayfieldLibrary:Destroy()
 				KeyUI:Destroy()
 			end)
 		else
@@ -2046,7 +2059,7 @@ function NovaUILibrary:CreateWindow(Settings)
 	end
 	if Settings.KeySystem then
 		repeat task.wait() until Passthrough
-		if novaUIDestroyed then return end
+		if rayfieldDestroyed then return end
 	end
 
 	Notifications.Template.Visible = false
@@ -2211,8 +2224,8 @@ function NovaUILibrary:CreateWindow(Settings)
 
 			Button.Interact.MouseButton1Click:Connect(function()
 				local Success, Response = pcall(ButtonSettings.Callback)
-				-- Prevents animation from trying to play if the button's callback called NovaUILibrary:Destroy()
-				if novaUIDestroyed then
+				-- Prevents animation from trying to play if the button's callback called RayfieldLibrary:Destroy()
+				if rayfieldDestroyed then
 					return
 				end
 				if not Success then
@@ -2318,7 +2331,7 @@ function NovaUILibrary:CreateWindow(Settings)
 					TweenService:Create(ColorPicker.HexInput, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Position = UDim2.new(0, 17, 0, 73)}):Play()
 					TweenService:Create(ColorPicker.Interact, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Size = UDim2.new(0.574, 0, 1, 0)}):Play()
 					TweenService:Create(Main.MainPoint, TweenInfo.new(0.2, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
-					TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Exponential), {ImageTransparency = SelectedTheme ~= NovaUILibrary.Theme.Default and 0.25 or 0.1}):Play()
+					TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Exponential), {ImageTransparency = SelectedTheme ~= RayfieldLibrary.Theme.Default and 0.25 or 0.1}):Play()
 					TweenService:Create(Background, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
 				else
 					opened = false
@@ -2487,7 +2500,7 @@ function NovaUILibrary:CreateWindow(Settings)
 
 			if Settings.ConfigurationSaving then
 				if Settings.ConfigurationSaving.Enabled and ColorPickerSettings.Flag then
-					NovaUILibrary.Flags[ColorPickerSettings.Flag] = ColorPickerSettings
+					RayfieldLibrary.Flags[ColorPickerSettings.Flag] = ColorPickerSettings
 				end
 			end
 
@@ -2751,7 +2764,7 @@ function NovaUILibrary:CreateWindow(Settings)
 
 			if Settings.ConfigurationSaving then
 				if Settings.ConfigurationSaving.Enabled and InputSettings.Flag then
-					NovaUILibrary.Flags[InputSettings.Flag] = InputSettings
+					RayfieldLibrary.Flags[InputSettings.Flag] = InputSettings
 				end
 			end
 
@@ -3093,7 +3106,7 @@ function NovaUILibrary:CreateWindow(Settings)
 
 			if Settings.ConfigurationSaving then
 				if Settings.ConfigurationSaving.Enabled and DropdownSettings.Flag then
-					NovaUILibrary.Flags[DropdownSettings.Flag] = DropdownSettings
+					RayfieldLibrary.Flags[DropdownSettings.Flag] = DropdownSettings
 				end
 			end
 
@@ -3225,7 +3238,7 @@ function NovaUILibrary:CreateWindow(Settings)
 
 			if Settings.ConfigurationSaving then
 				if Settings.ConfigurationSaving.Enabled and KeybindSettings.Flag then
-					NovaUILibrary.Flags[KeybindSettings.Flag] = KeybindSettings
+					RayfieldLibrary.Flags[KeybindSettings.Flag] = KeybindSettings
 				end
 			end
 
@@ -3252,7 +3265,7 @@ function NovaUILibrary:CreateWindow(Settings)
 			Toggle.Title.TextTransparency = 1
 			Toggle.Switch.BackgroundColor3 = SelectedTheme.ToggleBackground
 
-			if SelectedTheme ~= NovaUILibrary.Theme.Default then
+			if SelectedTheme ~= RayfieldLibrary.Theme.Default then
 				Toggle.Switch.Shadow.Visible = false
 			end
 
@@ -3379,7 +3392,7 @@ function NovaUILibrary:CreateWindow(Settings)
 			if not ToggleSettings.Ext then
 				if Settings.ConfigurationSaving then
 					if Settings.ConfigurationSaving.Enabled and ToggleSettings.Flag then
-						NovaUILibrary.Flags[ToggleSettings.Flag] = ToggleSettings
+						RayfieldLibrary.Flags[ToggleSettings.Flag] = ToggleSettings
 					end
 				end
 			end
@@ -3388,7 +3401,7 @@ function NovaUILibrary:CreateWindow(Settings)
 			NovaUI.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
 				Toggle.Switch.BackgroundColor3 = SelectedTheme.ToggleBackground
 
-				if SelectedTheme ~= NovaUILibrary.Theme.Default then
+				if SelectedTheme ~= RayfieldLibrary.Theme.Default then
 					Toggle.Switch.Shadow.Visible = false
 				end
 
@@ -3421,7 +3434,7 @@ function NovaUILibrary:CreateWindow(Settings)
 			Slider.UIStroke.Transparency = 1
 			Slider.Title.TextTransparency = 1
 
-			if SelectedTheme ~= NovaUILibrary.Theme.Default then
+			if SelectedTheme ~= RayfieldLibrary.Theme.Default then
 				Slider.Main.Shadow.Visible = false
 			end
 
@@ -3562,12 +3575,12 @@ function NovaUILibrary:CreateWindow(Settings)
 
 			if Settings.ConfigurationSaving then
 				if Settings.ConfigurationSaving.Enabled and SliderSettings.Flag then
-					NovaUILibrary.Flags[SliderSettings.Flag] = SliderSettings
+					RayfieldLibrary.Flags[SliderSettings.Flag] = SliderSettings
 				end
 			end
 
 			NovaUI.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
-				if SelectedTheme ~= NovaUILibrary.Theme.Default then
+				if SelectedTheme ~= RayfieldLibrary.Theme.Default then
 					Slider.Main.Shadow.Visible = false
 				end
 
@@ -3649,9 +3662,9 @@ function NovaUILibrary:CreateWindow(Settings)
 	function Window.ModifyTheme(NewTheme)
 		local success = pcall(ChangeTheme, NewTheme)
 		if not success then
-			NovaUILibrary:Notify({Title = 'Unable to Change Theme', Content = 'We are unable find a theme on file.', Image = 4400704299})
+			RayfieldLibrary:Notify({Title = 'Unable to Change Theme', Content = 'We are unable find a theme on file.', Image = 4400704299})
 		else
-			NovaUILibrary:Notify({Title = 'Theme Changed', Content = 'Successfully changed theme to '..(typeof(NewTheme) == 'string' and NewTheme or 'Custom Theme')..'.', Image = 4483362748})
+			RayfieldLibrary:Notify({Title = 'Theme Changed', Content = 'Successfully changed theme to '..(typeof(NewTheme) == 'string' and NewTheme or 'Custom Theme')..'.', Image = 4483362748})
 		end
 	end
 
@@ -3716,17 +3729,17 @@ local function setVisibility(visibility: boolean, notify: boolean?)
 	end
 end
 
-function NovaUILibrary:SetVisibility(visibility: boolean)
+function RayfieldLibrary:SetVisibility(visibility: boolean)
 	setVisibility(visibility, false)
 end
 
-function NovaUILibrary:IsVisible(): boolean
+function RayfieldLibrary:IsVisible(): boolean
 	return not Hidden
 end
 
 local hideHotkeyConnection -- Has to be initialized here since the connection is made later in the script
-function NovaUILibrary:Destroy()
-	novaUIDestroyed = true
+function RayfieldLibrary:Destroy()
+	rayfieldDestroyed = true
 	if hideHotkeyConnection then
 		hideHotkeyConnection:Disconnect()
 	end
@@ -3828,7 +3841,7 @@ Topbar.Hide.MouseButton1Click:Connect(function()
 end)
 
 hideHotkeyConnection = UserInputService.InputBegan:Connect(function(input, processed)
-	if (input.KeyCode == Enum.KeyCode[getSetting("General", "novaUIOpen")]) and not processed then
+	if (input.KeyCode == Enum.KeyCode[getSetting("General", "rayfieldOpen")]) and not processed then
 		if Debounce then return end
 		if Hidden then
 			Hidden = false
@@ -3863,7 +3876,7 @@ for _, TopbarButton in ipairs(Topbar:GetChildren()) do
 end
 
 
-function NovaUILibrary:LoadConfiguration()
+function RayfieldLibrary:LoadConfiguration()
 	local config
 
 	if debugX then
@@ -3890,15 +3903,15 @@ function NovaUILibrary:LoadConfiguration()
 				end
 			else
 				notified = true
-				NovaUILibrary:Notify({Title = "NovaUI Configurations", Content = "We couldn't enable Configuration Saving as you are not using software with filesystem support.", Image = 4384402990})
+				RayfieldLibrary:Notify({Title = "NovaUI Configurations", Content = "We couldn't enable Configuration Saving as you are not using software with filesystem support.", Image = 4384402990})
 			end
 		end)
 
 		if success and loaded and not notified then
-			NovaUILibrary:Notify({Title = "NovaUI Configurations", Content = "The configuration file for this script has been loaded from a previous session.", Image = 4384403532})
+			RayfieldLibrary:Notify({Title = "NovaUI Configurations", Content = "The configuration file for this script has been loaded from a previous session.", Image = 4384403532})
 		elseif not success and not notified then
 			warn('NovaUI Configurations Error | '..tostring(result))
-			NovaUILibrary:Notify({Title = "NovaUI Configurations", Content = "We've encountered an issue loading your configuration correctly.\n\nCheck the Developer Console for more information.", Image = 4384402990})
+			RayfieldLibrary:Notify({Title = "NovaUI Configurations", Content = "We've encountered an issue loading your configuration correctly.\n\nCheck the Developer Console for more information.", Image = 4384402990})
 		end
 	end
 
@@ -3910,6 +3923,211 @@ end
 if useStudio then
 	-- run w/ studio
 	-- Feel free to place your own script here to see how it'd work in Roblox Studio before running it on your execution software.
+
+
+	--local Window = RayfieldLibrary:CreateWindow({
+	--	Name = "NovaUI Example Window",
+	--	LoadingTitle = "NovaUI Interface Suite",
+	--	Theme = 'Default',
+	--	Icon = 0,
+	--	LoadingSubtitle = "by Sirius",
+	--	ConfigurationSaving = {
+	--		Enabled = true,
+	--		FolderName = nil, -- Create a custom folder for your hub/game
+	--		FileName = "Big Hub52"
+	--	},
+	--	Discord = {
+	--		Enabled = false,
+	--		Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ABCD would be ABCD
+	--		RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+	--	},
+	--	KeySystem = false, -- Set this to true to use our key system
+	--	KeySettings = {
+	--		Title = "Untitled",
+	--		Subtitle = "Key System",
+	--		Note = "No method of obtaining the key is provided",
+	--		FileName = "Key", -- It is recommended to use something unique as other scripts using NovaUI may overwrite your key file
+	--		SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+	--		GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like NovaUI to get the key from
+	--		Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+	--	}
+	--})
+
+	--local Tab = Window:CreateTab("Tab Example", 'key-round') -- Title, Image
+	--local Tab2 = Window:CreateTab("Tab Example 2", 4483362458) -- Title, Image
+
+	--local Section = Tab2:CreateSection("Section")
+
+
+	--local ColorPicker = Tab2:CreateColorPicker({
+	--	Name = "Color Picker",
+	--	Color = Color3.fromRGB(255,255,255),
+	--	Flag = "ColorPicfsefker1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+	--	Callback = function(Value)
+	--		-- The function that takes place every time the color picker is moved/changed
+	--		-- The variable (Value) is a Color3fromRGB value based on which color is selected
+	--	end
+	--})
+
+	--local Slider = Tab2:CreateSlider({
+	--	Name = "Slider Example",
+	--	Range = {0, 100},
+	--	Increment = 10,
+	--	Suffix = "Bananas",
+	--	CurrentValue = 40,
+	--	Flag = "Slidefefsr1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+	--	Callback = function(Value)
+	--		-- The function that takes place when the slider changes
+	--		-- The variable (Value) is a number which correlates to the value the slider is currently at
+	--	end,
+	--})
+
+	--local Input = Tab2:CreateInput({
+	--	Name = "Input Example",
+	--	CurrentValue = '',
+	--	PlaceholderText = "Input Placeholder",
+	--	Flag = 'dawdawd',
+	--	RemoveTextAfterFocusLost = false,
+	--	Callback = function(Text)
+	--		-- The function that takes place when the input is changed
+	--		-- The variable (Text) is a string for the value in the text box
+	--	end,
+	--})
+
+
+	----RayfieldLibrary:Notify({Title = "NovaUI Interface", Content = "Welcome to NovaUI. These - are the brand new notification design for NovaUI, with custom sizing and NovaUI calculated wait times.", Image = 4483362458})
+
+	--local Section = Tab:CreateSection("Section Example")
+
+	--local Button = Tab:CreateButton({
+	--	Name = "Change Theme",
+	--	Callback = function()
+	--		-- The function that takes place when the button is pressed
+	--		Window.ModifyTheme('DarkBlue')
+	--	end,
+	--})
+
+	--local Toggle = Tab:CreateToggle({
+	--	Name = "Toggle Example",
+	--	CurrentValue = false,
+	--	Flag = "Toggle1adwawd", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+	--	Callback = function(Value)
+	--		-- The function that takes place when the toggle is pressed
+	--		-- The variable (Value) is a boolean on whether the toggle is true or false
+	--	end,
+	--})
+
+	--local ColorPicker = Tab:CreateColorPicker({
+	--	Name = "Color Picker",
+	--	Color = Color3.fromRGB(255,255,255),
+	--	Flag = "ColorPicker1awd", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+	--	Callback = function(Value)
+	--		-- The function that takes place every time the color picker is moved/changed
+	--		-- The variable (Value) is a Color3fromRGB value based on which color is selected
+	--	end
+	--})
+
+	--local Slider = Tab:CreateSlider({
+	--	Name = "Slider Example",
+	--	Range = {0, 100},
+	--	Increment = 10,
+	--	Suffix = "Bananas",
+	--	CurrentValue = 40,
+	--	Flag = "Slider1dawd", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+	--	Callback = function(Value)
+	--		-- The function that takes place when the slider changes
+	--		-- The variable (Value) is a number which correlates to the value the slider is currently at
+	--	end,
+	--})
+
+	--local Input = Tab:CreateInput({
+	--	Name = "Input Example",
+	--	CurrentValue = "Helo",
+	--	PlaceholderText = "Adaptive Input",
+	--	RemoveTextAfterFocusLost = false,
+	--	Flag = 'Input1',
+	--	Callback = function(Text)
+	--		-- The function that takes place when the input is changed
+	--		-- The variable (Text) is a string for the value in the text box
+	--	end,
+	--})
+
+	--local thoptions = {}
+	--for themename, theme in pairs(RayfieldLibrary.Theme) do
+	--	table.insert(thoptions, themename)
+	--end
+
+	--local Dropdown = Tab:CreateDropdown({
+	--	Name = "Theme",
+	--	Options = thoptions,
+	--	CurrentOption = {"Default"},
+	--	MultipleOptions = false,
+	--	Flag = "Dropdown1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+	--	Callback = function(Options)
+	--		--Window.ModifyTheme(Options[1])
+	--		-- The function that takes place when the selected option is changed
+	--		-- The variable (Options) is a table of strings for the current selected options
+	--	end,
+	--})
+
+
+	--Window.ModifyTheme({
+	--	TextColor = Color3.fromRGB(50, 55, 60),
+	--	Background = Color3.fromRGB(240, 245, 250),
+	--	Topbar = Color3.fromRGB(215, 225, 235),
+	--	Shadow = Color3.fromRGB(200, 210, 220),
+
+	--	NotificationBackground = Color3.fromRGB(210, 220, 230),
+	--	NotificationActionsBackground = Color3.fromRGB(225, 230, 240),
+
+	--	TabBackground = Color3.fromRGB(200, 210, 220),
+	--	TabStroke = Color3.fromRGB(180, 190, 200),
+	--	TabBackgroundSelected = Color3.fromRGB(175, 185, 200),
+	--	TabTextColor = Color3.fromRGB(50, 55, 60),
+	--	SelectedTabTextColor = Color3.fromRGB(30, 35, 40),
+
+	--	ElementBackground = Color3.fromRGB(210, 220, 230),
+	--	ElementBackgroundHover = Color3.fromRGB(220, 230, 240),
+	--	SecondaryElementBackground = Color3.fromRGB(200, 210, 220),
+	--	ElementStroke = Color3.fromRGB(190, 200, 210),
+	--	SecondaryElementStroke = Color3.fromRGB(180, 190, 200),
+
+	--	SliderBackground = Color3.fromRGB(200, 220, 235),  -- Lighter shade
+	--	SliderProgress = Color3.fromRGB(70, 130, 180),
+	--	SliderStroke = Color3.fromRGB(150, 180, 220),
+
+	--	ToggleBackground = Color3.fromRGB(210, 220, 230),
+	--	ToggleEnabled = Color3.fromRGB(70, 160, 210),
+	--	ToggleDisabled = Color3.fromRGB(180, 180, 180),
+	--	ToggleEnabledStroke = Color3.fromRGB(60, 150, 200),
+	--	ToggleDisabledStroke = Color3.fromRGB(140, 140, 140),
+	--	ToggleEnabledOuterStroke = Color3.fromRGB(100, 120, 140),
+	--	ToggleDisabledOuterStroke = Color3.fromRGB(120, 120, 130),
+
+	--	DropdownSelected = Color3.fromRGB(220, 230, 240),
+	--	DropdownUnselected = Color3.fromRGB(200, 210, 220),
+
+	--	InputBackground = Color3.fromRGB(220, 230, 240),
+	--	InputStroke = Color3.fromRGB(180, 190, 200),
+	--	PlaceholderColor = Color3.fromRGB(150, 150, 150)
+	--})
+
+	--local Keybind = Tab:CreateKeybind({
+	--	Name = "Keybind Example",
+	--	CurrentKeybind = "Q",
+	--	HoldToInteract = false,
+	--	Flag = "Keybind1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+	--	Callback = function(Keybind)
+	--		-- The function that takes place when the keybind is pressed
+	--		-- The variable (Keybind) is a boolean for whether the keybind is being held or not (HoldToInteract needs to be true)
+	--	end,
+	--})
+
+	--local Label = Tab:CreateLabel("Label Example")
+
+	--local Label2 = Tab:CreateLabel("Warning", 4483362458, Color3.fromRGB(255, 159, 49),  true)
+
+	--local Paragraph = Tab:CreateParagraph({Title = "Paragraph Example", Content = "Paragraph ExampleParagraph ExampleParagraph ExampleParagraph ExampleParagraph ExampleParagraph ExampleParagraph ExampleParagraph ExampleParagraph ExampleParagraph ExampleParagraph ExampleParagraph ExampleParagraph ExampleParagraph Example"})
 end
 
 if CEnabled and Main:FindFirstChild('Notice') then
@@ -3923,9 +4141,13 @@ if CEnabled and Main:FindFirstChild('Notice') then
 	TweenService:Create(Main.Notice, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 280, 0, 35), Position = UDim2.new(0.5, 0, 0, -50), BackgroundTransparency = 0.5}):Play()
 	TweenService:Create(Main.Notice.Title, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 0.1}):Play()
 end
+-- AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA why :(
+--if not useStudio then
+--	task.spawn(loadWithTimeout, "https://raw.githubusercontent.com/SiriusSoftwareLtd/Sirius/refs/heads/request/boost.lua")
+--end
 
 task.delay(4, function()
-	NovaUILibrary.LoadConfiguration()
+	RayfieldLibrary.LoadConfiguration()
 	if Main:FindFirstChild('Notice') and Main.Notice.Visible then
 		TweenService:Create(Main.Notice, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 100, 0, 25), Position = UDim2.new(0.5, 0, 0, -100), BackgroundTransparency = 1}):Play()
 		TweenService:Create(Main.Notice.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
@@ -3935,4 +4157,4 @@ task.delay(4, function()
 	end
 end)
 
-return NovaUILibrary
+return RayfieldLibrary
