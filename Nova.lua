@@ -1,7 +1,7 @@
 -- // ========================================================
--- // Protected by Luraph Obfuscator (v14.2.1)
--- // Architecture: Luau Virtual Machine (LBI Register)
--- // Target: NovaUI Core (Full Obfuscation)
+-- // NovaUI Library - Main Source
+-- // Repository: github.com/m4teoscripts/NovaUI
+-- // Protected by Luau Virtual Machine (LBI Register)
 -- // ========================================================
 
 local LPH_NO_VIRTUALIZE = function(f) return f end
