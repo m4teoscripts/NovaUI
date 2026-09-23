@@ -1,6 +1,6 @@
 --[[
 	NovaUI Interface Suite
-	Adaptado y basado en la arquitectura de Rayfield
+	Adaptado y optimizado completamente para NovaUI
 ]]
 
 if debugX then
@@ -101,7 +101,7 @@ local function secureNotify(wType, title, content)
 end
 
 local InterfaceBuild = 'UU2NX'
-local Release = "NovaUI Build 1.0"
+local Release = "Build 1.0"
 local NovaUIFolder = "NovaUI"
 local ConfigurationFolder = NovaUIFolder.."/Configurations"
 local ConfigurationExtension = ".nvld"
@@ -138,8 +138,12 @@ local useStudio = RunService:IsStudio() or false
 
 local settingsCreated = false
 local settingsInitialized = false
-local prompt = useStudio and require(script.Parent.prompt) or { create = function() end }
+local prompt = useStudio and require(script.Parent.prompt) or loadWithTimeout('https://raw.githubusercontent.com/SiriusSoftwareLtd/Sirius/refs/heads/request/prompt.lua')
 local requestFunc = (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request) or http_request or request
+
+if not prompt and not useStudio then
+	prompt = { create = function() end }
+end
 
 local function callSafely(func, ...)
 	if func then
@@ -170,18 +174,12 @@ local function loadSettings()
 
 		if file then
 			local decodeSuccess, decodedFile = pcall(function() return HttpService:JSONDecode(file) end)
-			if decodeSuccess then
-				file = decodedFile
-			else
-				file = {}
-			end
+			if decodeSuccess then file = decodedFile else file = {} end
 		else
 			file = {}
 		end
 
-		if not settingsCreated then
-			return
-		end
+		if not settingsCreated then return end
 
 		if next(file) ~= nil then
 			for categoryName, categoryTable in file do
@@ -189,9 +187,7 @@ local function loadSettings()
 					local default = settingsTable[categoryName] and settingsTable[categoryName][settingName]
 					if not default then continue end
 					local settingType = typeof(default.Value)
-					if not (settingType == typeof(setting.Value)) then
-						continue
-					end
+					if not (settingType == typeof(setting.Value)) then continue end
 					default.Value = setting.Value
 				end
 			end
@@ -206,6 +202,10 @@ local function loadSettings()
 		end
 		settingsInitialized = true
 	end)
+
+	if not success and writefile then
+		warn('NovaUI had an issue accessing configuration saving capability.')
+	end
 end
 
 loadSettings()
@@ -278,12 +278,47 @@ local NovaUI = {
 			InputBackground = Color3.fromRGB(30, 50, 50),
 			InputStroke = Color3.fromRGB(50, 70, 70),
 			PlaceholderColor = Color3.fromRGB(140, 160, 160)
+		},
+		DarkBlue = {
+			TextColor = Color3.fromRGB(230, 230, 230),
+			Background = Color3.fromRGB(20, 25, 30),
+			Topbar = Color3.fromRGB(30, 35, 40),
+			Shadow = Color3.fromRGB(15, 20, 25),
+			NotificationBackground = Color3.fromRGB(25, 30, 35),
+			NotificationActionsBackground = Color3.fromRGB(45, 50, 55),
+			TabBackground = Color3.fromRGB(35, 40, 45),
+			TabStroke = Color3.fromRGB(45, 50, 60),
+			TabBackgroundSelected = Color3.fromRGB(40, 70, 100),
+			TabTextColor = Color3.fromRGB(200, 200, 200),
+			SelectedTabTextColor = Color3.fromRGB(255, 255, 255),
+			ElementBackground = Color3.fromRGB(30, 35, 40),
+			ElementBackgroundHover = Color3.fromRGB(40, 45, 50),
+			SecondaryElementBackground = Color3.fromRGB(35, 40, 45), 
+			ElementStroke = Color3.fromRGB(45, 50, 60),
+			SecondaryElementStroke = Color3.fromRGB(40, 45, 55),
+			SliderBackground = Color3.fromRGB(0, 90, 180),
+			SliderProgress = Color3.fromRGB(0, 120, 210),
+			SliderStroke = Color3.fromRGB(0, 150, 240),
+			ToggleBackground = Color3.fromRGB(35, 40, 45),
+			ToggleEnabled = Color3.fromRGB(0, 120, 210),
+			ToggleDisabled = Color3.fromRGB(70, 70, 80),
+			ToggleEnabledStroke = Color3.fromRGB(0, 150, 240),
+			ToggleDisabledStroke = Color3.fromRGB(75, 75, 85),
+			ToggleEnabledOuterStroke = Color3.fromRGB(20, 100, 180), 
+			ToggleDisabledOuterStroke = Color3.fromRGB(55, 55, 65),
+			DropdownSelected = Color3.fromRGB(30, 70, 90),
+			DropdownUnselected = Color3.fromRGB(25, 30, 35),
+			InputBackground = Color3.fromRGB(25, 30, 35),
+			InputStroke = Color3.fromRGB(45, 50, 60), 
+			PlaceholderColor = Color3.fromRGB(150, 150, 160)
 		}
 	}
 }
 
 local NovaAssetId = customAssetId or 10804731440
-local NovaGui = useStudio and script.Parent:FindFirstChild('NovaUI') or game:GetObjects("rbxassetid://"..NovaAssetId)[1]
+local NovaGui = useStudio and script.Parent:FindFirstChild('Rayfield') or game:GetObjects("rbxassetid://"..NovaAssetId)[1]
+if NovaGui then NovaGui.Name = "NovaUI" end
+
 NovaGui.Enabled = false
 
 if gethui then
@@ -291,16 +326,51 @@ if gethui then
 elseif syn and syn.protect_gui then 
 	syn.protect_gui(NovaGui)
 	NovaGui.Parent = CoreGui
-else
+elseif not useStudio and CoreGui:FindFirstChild("RobloxGui") then
+	NovaGui.Parent = CoreGui:FindFirstChild("RobloxGui")
+elseif not useStudio then
 	NovaGui.Parent = CoreGui
 end
 
+local minSize = Vector2.new(1024, 768)
+local useMobileSizing
+
+if NovaGui.AbsoluteSize.X < minSize.X and NovaGui.AbsoluteSize.Y < minSize.Y then
+	useMobileSizing = true
+end
+
+local useMobilePrompt = false
+if UserInputService.TouchEnabled then
+	useMobilePrompt = true
+end
+
 local Main = NovaGui.Main
+local MPrompt = NovaGui:FindFirstChild('Prompt')
 local Topbar = Main.Topbar
 local Elements = Main.Elements
 local LoadingFrame = Main.LoadingFrame
 local TabList = Main.TabList
+local dragBar = NovaGui:FindFirstChild('Drag')
+local dragInteract = dragBar and dragBar.Interact or nil
+local dragBarCosmetic = dragBar and dragBar.Drag or nil
+
+local dragOffset = 255
+local dragOffsetMobile = 150
+
+NovaGui.DisplayOrder = 100
+LoadingFrame.Version.Text = Release
+
+local Icons = useStudio and require(script.Parent.icons) or loadWithTimeout('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/refs/heads/main/icons.lua')
+
+local CFileName = nil
+local CEnabled = false
+local Minimised = false
+local Hidden = false
+local Debounce = false
+local searchOpen = false
 local Notifications = NovaGui.Notifications
+local keybindConnections = {}
+local novaDestroyed = false
 
 local SelectedTheme = NovaUI.Theme.Default
 
@@ -311,46 +381,190 @@ local function ChangeTheme(Theme)
 		SelectedTheme = Theme
 	end
 
-	Main.BackgroundColor3 = SelectedTheme.Background
-	Topbar.BackgroundColor3 = SelectedTheme.Topbar
-	Topbar.CornerRepair.BackgroundColor3 = SelectedTheme.Topbar
-	Main.Shadow.Image.ImageColor3 = SelectedTheme.Shadow
+	NovaGui.Main.BackgroundColor3 = SelectedTheme.Background
+	NovaGui.Main.Topbar.BackgroundColor3 = SelectedTheme.Topbar
+	NovaGui.Main.Topbar.CornerRepair.BackgroundColor3 = SelectedTheme.Topbar
+	NovaGui.Main.Shadow.Image.ImageColor3 = SelectedTheme.Shadow
+	NovaGui.Main.Topbar.ChangeSize.ImageColor3 = SelectedTheme.TextColor
+	NovaGui.Main.Topbar.Hide.ImageColor3 = SelectedTheme.TextColor
+	NovaGui.Main.Topbar.Search.ImageColor3 = SelectedTheme.TextColor
+end
+
+local function makeDraggable(object, dragObject, enableTaptic, tapticOffset)
+	local dragging = false
+	local relative = nil
+
+	local offset = Vector2.zero
+	local screenGui = object:FindFirstAncestorWhichIsA("ScreenGui")
+	if screenGui and screenGui.IgnoreGuiInset then
+		offset += getService('GuiService'):GetGuiInset()
+	end
+
+	dragObject.InputBegan:Connect(function(input, processed)
+		if processed then return end
+
+		local inputType = input.UserInputType.Name
+		if inputType == "MouseButton1" or inputType == "Touch" then
+			dragging = true
+			relative = object.AbsolutePosition + object.AbsoluteSize * object.AnchorPoint - UserInputService:GetMouseLocation()
+		end
+	end)
+
+	local inputEnded = UserInputService.InputEnded:Connect(function(input)
+		if not dragging then return end
+		local inputType = input.UserInputType.Name
+		if inputType == "MouseButton1" or inputType == "Touch" then
+			dragging = false
+		end
+	end)
+
+	local renderStepped = RunService.RenderStepped:Connect(function()
+		if dragging and not Hidden then
+			local position = UserInputService:GetMouseLocation() + relative + offset
+			object.Position = UDim2.fromOffset(position.X, position.Y)
+		end
+	end)
+
+	object.Destroying:Connect(function()
+		if inputEnded then inputEnded:Disconnect() end
+		if renderStepped then renderStepped:Disconnect() end
+	end)
 end
 
 function NovaUI:Notify(data)
 	task.spawn(function()
 		local newNotification = Notifications.Template:Clone()
-		newNotification.Name = data.Title or 'Notificación'
+		newNotification.Name = data.Title or 'NovaUI'
 		newNotification.Parent = Notifications
 		newNotification.Visible = true
 
 		newNotification.Title.Text = data.Title or "NovaUI"
 		newNotification.Description.Text = data.Content or ""
 
+		TweenService:Create(newNotification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.45}):Play()
+		TweenService:Create(newNotification.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+		TweenService:Create(newNotification.Description, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0.35}):Play()
+
 		task.wait(data.Duration or 5)
+
+		TweenService:Create(newNotification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(newNotification.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+		TweenService:Create(newNotification.Description, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+		task.wait(0.4)
 		newNotification:Destroy()
 	end)
 end
 
-function NovaUI:CreateWindow(Settings)
-	Topbar.Title.Text = Settings.Name
-	Main.Visible = true
-	
-	if Settings.Theme then
-		pcall(ChangeTheme, Settings.Theme)
+local function Hide(notify: boolean?)
+	if MPrompt then
+		MPrompt.Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+		MPrompt.Position = UDim2.new(0.5, 0, 0, -50)
+		MPrompt.Size = UDim2.new(0, 40, 0, 10)
+		MPrompt.BackgroundTransparency = 1
+		MPrompt.Title.TextTransparency = 1
+		MPrompt.Visible = true
 	end
 
+	Debounce = true
+	if notify then
+		NovaUI:Notify({Title = "Interfaz Oculta", Content = "La interfaz ha sido ocultada. Puedes volver a verla tocando 'Mostrar'.", Duration = 5})
+	end
+
+	TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(0, 470, 0, 0)}):Play()
+	TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+
+	if useMobilePrompt and MPrompt then
+		TweenService:Create(MPrompt, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(0, 140, 0, 30), Position = UDim2.new(0.5, 0, 0, 20), BackgroundTransparency = 0.3}):Play()
+		TweenService:Create(MPrompt.Title, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 0.3}):Play()
+	end
+
+	task.wait(0.5)
+	Main.Visible = false
+	Debounce = false
+end
+
+local function Unhide()
+	Debounce = true
+	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+	Main.Visible = true
+
+	TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = useMobileSizing and UDim2.new(0, 480, 0, 275) or UDim2.new(0, 500, 0, 475)}):Play()
+	TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+
+	if MPrompt then
+		TweenService:Create(MPrompt, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(0, 40, 0, 10), Position = UDim2.new(0.5, 0, 0, -50), BackgroundTransparency = 1}):Play()
+		TweenService:Create(MPrompt.Title, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
+		task.spawn(function()
+			task.wait(0.5)
+			MPrompt.Visible = false
+		end)
+	end
+
+	task.wait(0.5)
+	Minimised = false
+	Debounce = false
+end
+
+function NovaUI:CreateWindow(Settings)
+	if NovaGui:FindFirstChild('Loading') then
+		NovaGui.Enabled = true
+		NovaGui.Loading.Visible = true
+		task.wait(1.2)
+		NovaGui.Loading.Visible = false
+	end
+
+	Topbar.Title.Text = Settings.Name or "NovaUI"
+
+	Main.Size = UDim2.new(0, 420, 0, 100)
+	Main.Visible = true
+	Main.BackgroundTransparency = 1
+
+	if MPrompt then
+		MPrompt.Title.Text = Settings.ShowText and ('Show '..Settings.ShowText) or 'Show NovaUI'
+	end
+
+	LoadingFrame.Title.Text = Settings.LoadingTitle or "NovaUI"
+	LoadingFrame.Subtitle.Text = Settings.LoadingSubtitle or "Interface Suite"
+	LoadingFrame.Version.Text = "NovaUI Engine"
+
+	makeDraggable(Main, Topbar, false, {dragOffset, dragOffsetMobile})
+
+	Notifications.Template.Visible = false
+	Notifications.Visible = true
+	NovaGui.Enabled = true
+
+	task.wait(0.2)
+	TweenService:Create(Main, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+	TweenService:Create(LoadingFrame.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+	TweenService:Create(LoadingFrame.Subtitle, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+
+	Elements.Template.Visible = false
+	Elements.UIPageLayout.FillDirection = Enum.FillDirection.Horizontal
+	TabList.Template.Visible = false
+
+	local FirstTab = false
 	local Window = {}
+
 	function Window:CreateTab(Name, Image)
 		local TabButton = TabList.Template:Clone()
 		TabButton.Name = Name
 		TabButton.Title.Text = Name
 		TabButton.Parent = TabList
+		TabButton.Visible = true
 
 		local TabPage = Elements.Template:Clone()
 		TabPage.Name = Name
 		TabPage.Visible = true
 		TabPage.Parent = Elements
+
+		if not FirstTab then
+			FirstTab = Name
+			Elements.UIPageLayout:JumpTo(TabPage)
+		end
+
+		TabButton.Interact.MouseButton1Click:Connect(function()
+			Elements.UIPageLayout:JumpTo(TabPage)
+		end)
 
 		local Tab = {}
 
@@ -362,7 +576,13 @@ function NovaUI:CreateWindow(Settings)
 			Button.Parent = TabPage
 
 			Button.Interact.MouseButton1Click:Connect(function()
-				pcall(ButtonSettings.Callback)
+				local Success, Response = pcall(ButtonSettings.Callback)
+				if not Success then
+					Button.Title.Text = "Error en Callback"
+					warn("NovaUI | Error: " .. tostring(Response))
+					task.wait(1)
+					Button.Title.Text = ButtonSettings.Name
+				end
 			end)
 			return Button
 		end
@@ -387,6 +607,37 @@ function NovaUI:CreateWindow(Settings)
 			Slider.Title.Text = SliderSettings.Name
 			Slider.Visible = true
 			Slider.Parent = TabPage
+			
+			local SLDragging = false
+			Slider.Main.Interact.InputBegan:Connect(function(Input)
+				if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
+					SLDragging = true 
+				end 
+			end)
+
+			Slider.Main.Interact.InputEnded:Connect(function(Input) 
+				if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
+					SLDragging = false 
+				end 
+			end)
+
+			RunService.RenderStepped:Connect(function()
+				if SLDragging then
+					local mousePos = UserInputService:GetMouseLocation().X
+					local relativePos = mousePos - Slider.Main.AbsolutePosition.X
+					local percentage = math.clamp(relativePos / Slider.Main.AbsoluteSize.X, 0, 1)
+					local value = math.floor(SliderSettings.Range[1] + (percentage * (SliderSettings.Range[2] - SliderSettings.Range[1])))
+					
+					Slider.Main.Progress.Size = UDim2.new(percentage, 0, 1, 0)
+					Slider.Main.Information.Text = tostring(value) .. " " .. (SliderSettings.Suffix or "")
+					
+					if value ~= SliderSettings.CurrentValue then
+						SliderSettings.CurrentValue = value
+						pcall(SliderSettings.Callback, value)
+					end
+				end
+			end)
+
 			return Slider
 		end
 
@@ -396,6 +647,10 @@ function NovaUI:CreateWindow(Settings)
 			Input.Title.Text = InputSettings.Name
 			Input.Visible = true
 			Input.Parent = TabPage
+
+			Input.InputFrame.InputBox.FocusLost:Connect(function()
+				pcall(InputSettings.Callback, Input.InputFrame.InputBox.Text)
+			end)
 			return Input
 		end
 
@@ -461,11 +716,35 @@ function NovaUI:CreateWindow(Settings)
 		return Tab
 	end
 
-	NovaGui.Enabled = true
+	Elements.Visible = true
+	task.wait(0.8)
+	TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Size = useMobileSizing and UDim2.new(0, 480, 0, 275) or UDim2.new(0, 500, 0, 475)}):Play()
+	Topbar.Visible = true
+
 	return Window
 end
 
+Topbar.Hide.MouseButton1Click:Connect(function()
+	if Hidden then
+		Hidden = false
+		Unhide()
+	else
+		Hidden = true
+		Hide(true)
+	end
+end)
+
+if MPrompt then
+	MPrompt.Interact.MouseButton1Click:Connect(function()
+		if Hidden then
+			Hidden = false
+			Unhide()
+		end
+	end)
+end
+
 function NovaUI:Destroy()
+	novaDestroyed = true
 	NovaGui:Destroy()
 end
 
